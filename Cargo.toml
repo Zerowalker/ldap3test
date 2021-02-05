@@ -1,0 +1,13 @@
+[package]
+name = "ldap3test"
+version = "0.1.0"
+authors = ["Your Name <you@example.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustls = "0.19.0"
+ldap3 = "0.9.2"
+tokio = { version = "1.1.1", features = ["full"] }
+async-trait = "0.1.42"
