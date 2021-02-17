@@ -7,5 +7,5 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ldap3 = { version = "0.9.2", default-features = false, features = ["tls-rustls"] }
+ldap3 = { version = "0.9.2"}
 tokio = { version = "1.2.0", features = ["full"] }
