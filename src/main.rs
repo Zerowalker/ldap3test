@@ -1,7 +1,5 @@
-use std::{net::Ipv4Addr, str::FromStr};
-
 use ldap3::{LdapConnAsync, LdapConnSettings, LdapError};
-
+use std::{net::Ipv4Addr, str::FromStr};
 #[derive(Debug, PartialEq)]
 enum ConnType {
     Ldap = 0,
@@ -9,12 +7,7 @@ enum ConnType {
     Ldaps = 2,
 }
 
-async fn test(
-    user: &str,
-    pass: &str,
-    ip: &Ipv4Addr,
-    conn_type: &ConnType,
-) -> std::result::Result<(), LdapError> {
+fn get_conn_settings(ip: &Ipv4Addr, conn_type: &ConnType) -> (LdapConnSettings, String) {
     let url = {
         match conn_type {
             // If connection type is Ldap or StartTls, connect via "ldap://"
@@ -25,27 +18,35 @@ async fn test(
     };
     // Always ignore certificate verification to simplify testing
     // Only enable starttls when the connection type specify it (just to make it clearer)
-    let ldap_conn_settings = LdapConnSettings::new()
-        .set_starttls(conn_type == &ConnType::StartTls)
-        .set_no_tls_verify(true);
+    (
+        LdapConnSettings::new()
+            .set_starttls(conn_type == &ConnType::StartTls)
+            .set_no_tls_verify(true),
+        url,
+    )
+}
 
-    println!("url: {}, StartTls: {}", url, ldap_conn_settings.starttls());
+async fn test(
+    user: &str,
+    pass: &str,
+    url: &str,
+    ldap_conn_settings: LdapConnSettings,
+) -> std::result::Result<(), LdapError> {
     // Create ocnnection with the previous settings
     let (conn, mut ldap) = LdapConnAsync::with_settings(ldap_conn_settings, &url).await?;
     ldap3::drive!(conn);
-
     //
     let _res = match ldap.simple_bind(user, pass).await {
         // On result check for success (not sure if it served a point or not as you can do it forever?)
         Ok(o) => match o.success() {
             Ok(o) => o,
             Err(e) => {
-                println!("simple_bind failed on success()?");
+                // println!("simple_bind failed on success()?");
                 return Err(e);
             }
         },
         Err(e) => {
-            println!("simple_bind failed");
+            // println!("simple_bind failed");
             return Err(e);
         }
     };
@@ -53,7 +54,7 @@ async fn test(
     match ldap.unbind().await {
         Ok(_) => {}
         Err(e) => {
-            println!("unbind failed");
+            // println!("unbind failed");
             return Err(e);
         }
     };
@@ -69,26 +70,22 @@ async fn main() {
     let user: String = options[1].clone();
     let pass: String = options[2].clone();
     let ip = Ipv4Addr::from_str(&options[3]).unwrap();
-    let mut conn_type = ConnType::Ldap;
-    println!("Testing ConnType: {:?}", conn_type);
 
-    for i in 0..5 {
-        println!("-----Test [{:?}]: #{}-----", conn_type, i);
-        test(&user, &pass, &ip, &conn_type).await.unwrap();
-        println!("-----Test Done-----");
+    for t in 0..3 {
+        let conn_type: ConnType = match t {
+            0 => ConnType::Ldap,
+            1 => ConnType::StartTls,
+            2 => ConnType::Ldaps,
+            _ => panic!("invalid match"),
+        };
+        for i in 0..10 {
+            let (conn_settings, url) = get_conn_settings(&ip, &conn_type);
+            let res = match test(&user, &pass, &url, conn_settings.clone()).await {
+                Ok(_) => "SUCCEDED",
+                Err(_) => " FAILED ",
+            };
+            let spec = format!("url: {}, StartTls: {}", url, conn_settings.starttls());
+            println!("[{:?}]: #{} - [{}] - [{}]", conn_type, i, res, spec);
+        }
     }
-    conn_type = ConnType::StartTls;
-    for i in 0..5 {
-        println!("-----Test [{:?}]: #{}-----", conn_type, i);
-        test(&user, &pass, &ip, &conn_type).await.unwrap();
-        println!("-----Test Done-----");
-    }
-    conn_type = ConnType::Ldaps;
-    for i in 0..5 {
-        println!("-----Test [{:?}]: #{}-----", conn_type, i);
-        test(&user, &pass, &ip, &conn_type).await.unwrap();
-        println!("-----Test Done-----");
-    }
-
-    println!("All tests completed successfully!")
 }
