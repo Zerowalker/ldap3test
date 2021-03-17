@@ -69,7 +69,7 @@ async fn main() {
     println!("Arguments: {:?}", options);
     let user: String = options[1].clone();
     let pass: String = options[2].clone();
-    let ip = I & options[3];
+    let server: String = options[3].clone();
 
     for t in 0..3 {
         let conn_type: ConnType = match t {
@@ -79,7 +79,7 @@ async fn main() {
             _ => panic!("invalid match"),
         };
         for i in 0..10 {
-            let (conn_settings, url) = get_conn_settings(&ip, &conn_type);
+            let (conn_settings, url) = get_conn_settings(&server, &conn_type);
             let res = match test(&user, &pass, &url, conn_settings.clone()).await {
                 Ok(_) => "SUCCEDED",
                 Err(_) => " FAILED ",
