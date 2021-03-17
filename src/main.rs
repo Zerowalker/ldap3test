@@ -7,13 +7,13 @@ enum ConnType {
     Ldaps = 2,
 }
 
-fn get_conn_settings(ip: &Ipv4Addr, conn_type: &ConnType) -> (LdapConnSettings, String) {
+fn get_conn_settings(server: &str, conn_type: &ConnType) -> (LdapConnSettings, String) {
     let url = {
         match conn_type {
             // If connection type is Ldap or StartTls, connect via "ldap://"
-            ConnType::Ldap | ConnType::StartTls => format!("ldap://{}", ip),
+            ConnType::Ldap | ConnType::StartTls => format!("ldap://{}", server),
             // If connection type is Ldaps, connect via "ldaps://"
-            ConnType::Ldaps => format!("ldaps://{}", ip),
+            ConnType::Ldaps => format!("ldaps://{}", server),
         }
     };
     // Always ignore certificate verification to simplify testing
@@ -69,7 +69,7 @@ async fn main() {
     println!("Arguments: {:?}", options);
     let user: String = options[1].clone();
     let pass: String = options[2].clone();
-    let ip = Ipv4Addr::from_str(&options[3]).unwrap();
+    let ip = &options[3];
 
     for t in 0..3 {
         let conn_type: ConnType = match t {
