@@ -1,5 +1,4 @@
 use ldap3::{LdapConnAsync, LdapConnSettings, LdapError};
-use std::{net::Ipv4Addr, str::FromStr};
 #[derive(Debug, PartialEq)]
 enum ConnType {
     Ldap = 0,
